@@ -1,0 +1,273 @@
+/* Import the font */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('../public/fonts/OpenDyslexic-Regular.otf') format('opentype');
+}
+
+/* Global Styles */
+body {
+  margin: 0;
+  font-family: 'OpenDyslexic', sans-serif;
+  background-color: #fdf6e3; /* Soft pastel yellow */
+  color: #333;
+  line-height: 1.8;
+  font-size: 1.2rem;
+}
+
+.App {
+  text-align: center;
+}
+
+/* Main Container */
+.main-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.app-header {
+  background-color: #a7d8de; /* Soft pastel blue */
+  padding: 20px;
+  color: white;
+  border-radius: 10px 10px 0 0;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.app-header button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+/* Buttons */
+.btn {
+  background-color: #f7a399; /* Soft pastel salmon */
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  margin: 10px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-family: 'OpenDyslexic', sans-serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn:hover {
+  background-color: #e68c82;
+}
+
+.btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Uploader Component */
+.uploader-container {
+  padding: 40px;
+  border: 3px dashed #a7d8de;
+  border-radius: 10px;
+  margin: 20px 0;
+  background-color: #f0f8ff;
+}
+
+.uploader-container input[type="file"] {
+  width: 100%;
+  padding: 15px;
+  font-size: 1rem;
+}
+
+/* Reader Component */
+.reader-container {
+  text-align: left;
+  margin-top: 20px;
+  position: relative;
+}
+
+.reader-toolbar {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #fafafa;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.text-content {
+  padding: 20px;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.text-content span.highlight {
+  background-color: #fef9a7; /* Highlight yellow */
+  border-radius: 3px;
+  padding: 2px 0;
+}
+
+/* Word Definition Tooltip */
+/* Word Definition Tooltip */
+.tooltip {
+  /* This makes it stay in the middle of the screen */
+  position: fixed; 
+  top: 50%;
+  left: 50%;
+  /* This perfectly centers it */
+  transform: translate(-50%, -50%); 
+  
+  background-color: #333;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  z-index: 100;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  transition: opacity 0.2s;
+  pointer-events: none; /* Prevents tooltip from blocking clicks */
+}
+
+/* Quiz Component */
+.quiz-container {
+  margin-top: 30px;
+  text-align: left;
+}
+
+.quiz-question {
+  background-color: #f0f8ff;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.quiz-question p {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.quiz-options button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin: 8px 0;
+  padding: 15px;
+  font-size: 1.1rem;
+  background-color: white;
+  color: #333;
+  border: 2px solid #a7d8de;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.quiz-options button.correct {
+  background-color: #c8e6c9; /* Soft green */
+  border-color: #4caf50;
+}
+
+.quiz-options button.incorrect {
+  background-color: #ffcdd2; /* Soft red */
+  border-color: #f44336;
+}
+
+/* Loading Spinner */
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #f7a399;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Login Form */
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
+}
+
+.login-form {
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 350px;
+}
+
+.login-form h2 {
+    margin-bottom: 20px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    font-family: 'OpenDyslexic', sans-serif;
+    font-size: 1.1rem;
+    box-sizing: border-box;
+}
+
+/* Custom Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fdf6e3; /* Soft pastel yellow */
+  padding: 30px 40px;
+  border-radius: 15px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  position: relative;
+  text-align: left;
+  font-size: 1.3rem;
+  line-height: 1.9;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+}

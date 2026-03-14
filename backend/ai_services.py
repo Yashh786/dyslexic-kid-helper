@@ -21,13 +21,13 @@ def call_ollama(prompt, is_json=False):
 
 def get_word_definition(word):
     # ... (This function remains unchanged)
-    prompt = f"Provide a very simple, one-sentence definition for a 10-year-old child for the word: '{word}'."
+    prompt = f"Provide a very simple, one-sentence or much shorter definition for a 10-year-old child for the word: '{word}'."
     response_text = call_ollama(prompt)
     return response_text.strip()
 
 def simplify_paragraph(text):
     # ... (This function remains unchanged)
-    prompt = f"Rewrite the following paragraph in very simple terms for a 10-year-old child with dyslexia. Keep the core meaning the same:\n\n'{text}'"
+    prompt = f"Rewrite the following paragraph in very simple terms and as short as possible for a 10-year-old child with dyslexia. Keep the core meaning the same:\n\n'{text}'"
     response_text = call_ollama(prompt)
     return response_text.strip()
 

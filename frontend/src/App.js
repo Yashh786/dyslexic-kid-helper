@@ -1,5 +1,3 @@
-// The filename is: frontend/src/App.js
-
 import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -9,7 +7,6 @@ import Login from './components/Login';
 import Uploader from './components/Uploader';
 import Reader from './components/Reader';
 import Quiz from './components/Quiz';
-import Modal from './components/Modal'; // Import the new Modal component
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -18,35 +15,33 @@ function App() {
   const [extractedText, setExtractedText] = useState('');
   const [quizData, setQuizData] = useState(null);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
-  // --- NEW STATE FOR THE MODAL ---
-  const [modalContent, setModalContent] = useState({ isOpen: false, text: '' });
+  
+  // --- UPDATED STATE FOR SIMPLIFIED TEXT ---
+  // We use a simple string state to show/hide the box
+  const [simplifiedText, setSimplifiedText] = useState('');
 
   const handleLoginSuccess = (userData) => { setUser(userData); };
-  const handleLogout = () => { setUser(null); setExtractedText(''); setQuizData(null); };
-  const handleTextExtracted = (text) => { setExtractedText(text); setQuizData(null); };
+  const handleLogout = () => { setUser(null); setExtractedText(''); setQuizData(null); setSimplifiedText(''); };
+  const handleTextExtracted = (text) => { setExtractedText(text); setQuizData(null); setSimplifiedText(''); };
 
-  // --- NEW FUNCTION TO OPEN THE MODAL ---
-  const handleOpenModal = (text) => {
-    setModalContent({ isOpen: true, text: `Simpler Version:\n\n${text}` });
+  // --- NEW FUNCTION TO HANDLE SIMPLIFICATION ---
+  const handleSimplifyResult = (text) => {
+    setSimplifiedText(text);
+    // Optional: scroll smoothly to the simplified box
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   const handleGenerateQuiz = async (text) => {
-    // ... (This function remains unchanged)
     setLoadingQuiz(true);
     setQuizData(null);
     try {
       const response = await axios.post(`${API_URL}/api/quiz`, { text });
       if (response.data && response.data.error) {
         alert(`Could not generate quiz: ${response.data.error}`);
-        setQuizData(null);
       } else { setQuizData(response.data); }
     } catch (error) {
       console.error("Quiz generation error", error);
-      let errorMessage = "An error occurred while communicating with the server.";
-      if (error.response && error.response.data && error.response.data.error) {
-        errorMessage = `Server Error: ${error.response.data.error}`;
-      }
-      alert(errorMessage);
+      alert("An error occurred while generating the quiz.");
     } finally { setLoadingQuiz(false); }
   };
 
@@ -54,31 +49,43 @@ function App() {
 
   return (
     <div className="App">
-      {/* --- RENDER THE MODAL --- */}
-      <Modal 
-        isOpen={modalContent.isOpen} 
-        onClose={() => setModalContent({ isOpen: false, text: '' })}
-      >
-        <div style={{ whiteSpace: 'pre-wrap' }}>{modalContent.text}</div>
-      </Modal>
-
       <div className="main-container">
         <Header user={user} onLogout={handleLogout} />
+        
         {!extractedText ? (
           <Uploader onTextExtracted={handleTextExtracted} />
         ) : (
           <>
             <button className='btn' onClick={() => setExtractedText('')}>&#8592; Upload New File</button>
-            {/* --- PASS THE NEW FUNCTION AS A PROP --- */}
+            
+            {/* --- THE NEW SIMPLIFIED BOX --- */}
+            {/* This uses the .simplified-container class from your CSS */}
+            {simplifiedText && (
+              <div className="simplified-container">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="simplified-header">🌟 A Simpler Version for You:</span>
+                  <button 
+                    onClick={() => setSimplifiedText('')} 
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  >
+                    ✖
+                  </button>
+                </div>
+                <p>{simplifiedText}</p>
+              </div>
+            )}
+
             <Reader 
               text={extractedText} 
               onGenerateQuiz={handleGenerateQuiz}
-              onSimplify={handleOpenModal}
+              onSimplify={handleSimplifyResult}
             />
+
             {loadingQuiz && <div className="loader"></div>}
             {quizData && <Quiz quizData={quizData} />}
           </>
         )}
+
         <div style={{marginTop: '40px', color: '#888'}}>
           <p><i>Future Features (Coming Soon!)</i></p>
           <button className='btn' disabled>📷 AR Mode</button>

@@ -5,8 +5,10 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Install system dependencies required for Tesseract, Pillow, and pdf2image
+# ADDED: tesseract-ocr-hin for Hindi support
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    tesseract-ocr-hin \
     libtesseract-dev \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*

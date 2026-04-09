@@ -11,10 +11,16 @@ function Login({ onLoginSuccess }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_URL}/api/login`, { username, password });
-      onLoginSuccess(response.data);
+      const response = await axios.post(`${API_URL}/api/profiles/login`, { username, password });
+      if (response.data && response.data.access_token) {
+        onLoginSuccess({
+          token: response.data.access_token,
+          profile: response.data.profile
+        });
+      }
     } catch (err) {
-      setError('Invalid username or password. Try "kid" / "kid123".');
+      console.error('Login error:', err);
+      setError(err.response?.data?.error || 'Invalid username or password. Try "kid" / "kid123".');
     }
   };
 

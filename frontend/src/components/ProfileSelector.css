@@ -1,0 +1,308 @@
+.profile-selector-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #fdf6e3;
+  padding: 20px;
+  font-family: 'OpenDyslexic', Arial, sans-serif;
+}
+
+.profile-selector-card {
+  background: white;
+  border-radius: 18px;
+  padding: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-width: 600px;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(167, 216, 222, 0.2);
+}
+
+
+
+.header-section {
+  background: linear-gradient(135deg, #a7d8de 0%, #8fc5cc 100%);
+  padding: 40px 20px;
+  text-align: center;
+  color: white;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 4px 12px rgba(167, 216, 222, 0.2);
+}
+
+.profile-selector-card h1 {
+  font-size: 2.6rem;
+  color: white;
+  margin: 0 0 8px 0;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+  color: white;
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  border-left: 4px solid #c62828;
+  line-height: 1.5;
+}
+
+.error-message span {
+  display: block;
+}
+
+.no-profiles-section {
+  text-align: center;
+  padding: 30px;
+}
+
+.no-profiles-text {
+  color: #666;
+  margin-bottom: 20px;
+  font-size: 1em;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-selector-card > .main-content,
+.profile-selector-card > .no-profiles-section {
+  padding: 30px;
+}
+
+.profiles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.section-label {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+@media (max-width: 500px) {
+  .profiles-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+.profile-card {
+  background: linear-gradient(135deg, #f8fafb 0%, #f0f5f7 100%);
+  border: 3px solid #a7d8de;
+  border-radius: 14px;
+  padding: 30px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(167, 216, 222, 0.15);
+}
+
+.profile-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(167, 216, 222, 0.35);
+  border-color: #7db5c0;
+  background: linear-gradient(135deg, #ffffff 0%, #f5fafb 100%);
+}
+
+.profile-card.selected {
+  background: linear-gradient(135deg, #a7d8de 0%, #8fc5cc 100%);
+  border-color: #7db5c0;
+  color: white;
+  box-shadow: 0 8px 20px rgba(167, 216, 222, 0.5);
+}
+
+.profile-avatar {
+  font-size: 3.5rem;
+}
+
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  word-break: break-word;
+  max-width: 100%;
+  letter-spacing: 0.3px;
+}
+
+.login-section {
+  background: linear-gradient(135deg, #f8fafb 0%, #f0f5f7 100%);
+  border-radius: 12px;
+  padding: 25px;
+  border: 2px solid #d0e8ec;
+  box-shadow: inset 0 2px 4px rgba(167, 216, 222, 0.1);
+}
+
+.login-section .section-label {
+  margin-bottom: 12px;
+}
+
+.password-input {
+  width: 100%;
+  padding: 16px;
+  border: 3px solid #ddd;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  font-family: 'OpenDyslexic', Arial, sans-serif;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: #7db5c0;
+  box-shadow: 0 0 12px rgba(125, 181, 192, 0.4), 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #f8fdfe;
+}
+
+.password-input::placeholder {
+  color: #999;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'OpenDyslexic', Arial, sans-serif;
+}
+
+.btn-large {
+  padding: 12px;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #a7d8de 0%, #8fc5cc 100%);
+  color: white;
+  flex: 1;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: 0.6px;
+  box-shadow: 0 4px 12px rgba(167, 216, 222, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8fc5cc 0%, #7db5c0 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(125, 181, 192, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #e8e8e8 0%, #d8d8d8 100%);
+  color: #333;
+  flex: 1;
+  font-weight: 700;
+  font-size: 1.05rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d8d8d8 0%, #c8c8c8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff8a80 0%, #ff6b6b 100%);
+  color: white;
+  flex: 1;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-confirm-section {
+  background-color: #fff5f5;
+  border: 2px dashed #ff6b6b;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.warning-box {
+  margin-bottom: 15px;
+}
+
+.warning-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #c62828;
+  margin: 0 0 10px 0;
+}
+
+.warning-text {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.warning-subtext {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0;
+}
+
+.max-profiles-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-size: 0.9rem;
+  border-left: 4px solid #ffc107;
+}
+
+.loading {
+  text-align: center;
+  color: #333;
+  font-size: 1.1rem;
+  padding: 30px;
+  background-color: #fdf6e3;
+}

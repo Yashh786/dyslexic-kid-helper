@@ -22,65 +22,97 @@ body {
 .main-container {
   max-width: 900px;
   margin: 20px auto;
-  padding: 20px;
+  padding: 0;
   background-color: #ffffff;
   border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.main-container > *:not(.app-header) {
+  padding: 20px;
 }
 
 /* Header */
 .app-header {
-  background-color: #a7d8de; /* Soft pastel blue */
-  padding: 20px;
+  background: linear-gradient(135deg, #a7d8de 0%, #8fc5cc 100%);
+  padding: 20px 25px;
   color: white;
-  border-radius: 10px 10px 0 0;
+  border-radius: 15px 15px 0 0;
+  box-shadow: 0 6px 16px rgba(167, 216, 222, 0.3);
+  position: relative;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
 }
 
-.app-header button {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+.app-header .logout-btn {
+  background: linear-gradient(135deg, #f7a399 0%, #f08880 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  font-size: 1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.app-header .logout-btn:hover {
+  background: linear-gradient(135deg, #f08880 0%, #e67e6d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(230, 124, 104, 0.4);
 }
 
 /* Buttons */
 .btn {
-  background-color: #f7a399; /* Soft pastel salmon */
+  background: linear-gradient(135deg, #f7a399 0%, #f08880 100%);
   color: white;
   border: none;
-  padding: 15px 30px;
+  padding: 15px 35px;
   margin: 10px;
   border-radius: 50px;
   cursor: pointer;
   font-family: 'OpenDyslexic', sans-serif;
   font-size: 1.2rem;
-  font-weight: bold;
-  transition: background-color 0.3s;
+  font-weight: 900;
+  transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(247, 163, 153, 0.3);
 }
 
 .btn:hover {
-  background-color: #e68c82;
+  background: linear-gradient(135deg, #f08880 0%, #e67e6d 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(230, 124, 104, 0.4);
 }
 
 .btn:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 /* Uploader Component */
 .uploader-container {
-  padding: 40px;
-  border: 3px dashed #a7d8de;
-  border-radius: 10px;
-  margin: 20px 0;
-  background-color: #f0f8ff;
+  padding: 45px;
+  border: 4px dashed #a7d8de;
+  border-radius: 15px;
+  margin: 25px 0;
+  background: linear-gradient(135deg, #f0f8ff 0%, #f5fbfd 100%);
+  box-shadow: inset 0 2px 8px rgba(167, 216, 222, 0.1);
+  transition: all 0.3s ease;
 }
 
 .uploader-container input[type="file"] {

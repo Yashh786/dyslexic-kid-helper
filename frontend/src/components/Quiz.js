@@ -20,10 +20,17 @@ function Quiz({ quizData }) {
   };
 
   const getButtonClass = (questionIndex, option) => {
-    if (!submitted) return '';
-    const correctAnswer = quizData[questionIndex].answer;
-    if (option === correctAnswer) return 'correct';
-    if (answers[questionIndex] === option) return 'incorrect';
+    // Show selected state even before submitting
+    if (answers[questionIndex] === option && !submitted) {
+      return 'selected';
+    }
+    
+    // After submission, show correct/incorrect
+    if (submitted) {
+      const correctAnswer = quizData[questionIndex].answer;
+      if (option === correctAnswer) return 'correct';
+      if (answers[questionIndex] === option) return 'incorrect';
+    }
     return '';
   };
 

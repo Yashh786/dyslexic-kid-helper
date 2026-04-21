@@ -84,15 +84,39 @@ function App() {
     setLoadingQuiz(true);
     setQuizData(null);
     try {
+      console.log("[INFO] Starting quiz generation with text length:", text.length);
       const response = await axios.post(`${API_URL}/api/quiz`, { text });
-      if (response.data && response.data.error) {
-        alert(`Could not generate quiz: ${response.data.error}`);
-      } else {
+      
+      // Check if response is a valid array of quiz questions
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        console.log("[OK] Quiz generated successfully with", response.data.length, "questions");
         setQuizData(response.data);
+        // Scroll to quiz after a short delay to ensure rendering
+        setTimeout(() => {
+          const quizElement = document.querySelector('.quiz-container');
+          if (quizElement) {
+            quizElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
+      } else {
+        console.error("[ERROR] Invalid quiz response format");
+        alert("Quiz generation returned an unexpected format. Please try again.");
       }
     } catch (error) {
-      console.error("Quiz generation error", error);
-      alert("An error occurred while generating the quiz.");
+      console.error("[ERROR] Quiz generation failed:", error);
+      
+      // Handle network/server errors
+      if (error.response) {
+        const errorMsg = error.response.data?.error || 'Server error occurred';
+        console.error("[ERROR] Server error:", errorMsg);
+        alert(`Could not generate quiz: ${errorMsg}`);
+      } else if (error.request) {
+        console.error("[ERROR] No response from server");
+        alert("No response from server. Is the backend running?");
+      } else {
+        console.error("[ERROR] Request setup failed:", error.message);
+        alert("An error occurred while preparing the quiz request.");
+      }
     } finally {
       setLoadingQuiz(false);
     }
@@ -151,6 +175,7 @@ function App() {
               onGenerateQuiz={handleGenerateQuiz}
               onSimplify={handleSimplifyResult}
               onReadAloudStarted={handleReadAloudStarted}
+              isGeneratingQuiz={loadingQuiz}
             />
 
             {/* --- PRONUNCIATION CHECKER --- */}
@@ -159,7 +184,14 @@ function App() {
               isVisible={hasListened}
             />
 
-            {loadingQuiz && <div className="loader"></div>}
+            {loadingQuiz && (
+              <div style={{ textAlign: 'center', padding: '30px', marginTop: '20px' }}>
+                <div className="loader"></div>
+                <p style={{ marginTop: '15px', fontSize: '1.2rem', color: '#666' }}>
+                  🤔 Creating questions for you... This may take a moment!
+                </p>
+              </div>
+            )}
             {quizData && <Quiz quizData={quizData} />}
           </>
         )}

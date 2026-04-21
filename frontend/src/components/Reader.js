@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted }) {
+function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGeneratingQuiz }) {
   const [displayedText, setDisplayedText] = useState(text);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [tooltip, setTooltip] = useState({ visible: false, word: '', content: '' });
@@ -150,11 +150,13 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted }) {
         )}
 
         <div className="reader-toolbar">
-            <button className="btn" onClick={handleSpeak}>
+            <button className="btn" onClick={handleSpeak} disabled={isGeneratingQuiz}>
                 {isSpeaking ? '🛑 Stop' : '▶️ Read Aloud'}
             </button>
-            <button className="btn" onClick={handleSimplifyInternal}>🪄 Simplify Selection</button>
-            <button className="btn" onClick={() => onGenerateQuiz(text)}>❓ Generate Quiz</button>
+            <button className="btn" onClick={handleSimplifyInternal} disabled={isGeneratingQuiz}>🪄 Simplify Selection</button>
+            <button className="btn" onClick={() => onGenerateQuiz(text)} disabled={isGeneratingQuiz} title={isGeneratingQuiz ? "Loading quiz..." : "Generate Quiz"}>
+                {isGeneratingQuiz ? '⏳ Generating...' : '❓ Generate Quiz'}
+            </button>
         </div>
         <div 
           className="text-content" 

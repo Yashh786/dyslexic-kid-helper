@@ -218,6 +218,13 @@ body {
   border-color: #f44336;
 }
 
+.quiz-options button.selected {
+  background-color: #fff9e6; /* Light yellow */
+  border-color: #ffcc00;
+  border-width: 3px;
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+}
+
 /* Loading Spinner */
 .loader {
   border: 5px solid #f3f3f3;

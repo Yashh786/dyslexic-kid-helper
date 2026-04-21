@@ -329,8 +329,19 @@ def create_quiz():
     text = data.get('text')
     if not text:
         return jsonify({'error': 'Text not provided'}), 400
+    
     quiz_data = generate_quiz(text)
-    return jsonify(quiz_data)
+    
+    # If there's an error, return it
+    if isinstance(quiz_data, dict) and 'error' in quiz_data:
+        return jsonify(quiz_data), 400
+    
+    # Success case - return the quiz array
+    if isinstance(quiz_data, list) and len(quiz_data) > 0:
+        return jsonify(quiz_data), 200
+    
+    # Fallback error
+    return jsonify({'error': 'Failed to generate valid quiz'}), 500
 
 
 if __name__ == '__main__':

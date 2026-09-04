@@ -3,12 +3,23 @@ services:
     build: ./backend
     ports:
       - "5000:5000"
+    environment:
+      # Values come from a ".env" file in this same folder (docker-compose loads
+      # it automatically) or your shell environment. Falls back to safe local
+      # defaults if unset, matching previous behavior.
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///profiles.db}
+      - FLASK_DEBUG=${FLASK_DEBUG:-false}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     volumes:
       - ./backend:/app
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
     ports:
       - "3000:80"
     depends_on:

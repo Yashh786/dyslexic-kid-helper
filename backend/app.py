@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 import os
+import secrets
 from dotenv import load_dotenv
 
 from db_models import db, Profile
@@ -14,10 +17,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Enable CORS with proper headers for JWT
+# Enable CORS with proper headers for JWT.
+# ALLOWED_ORIGINS defaults to "*" (today's behavior). For a real deployment,
+# set it to your actual frontend URL(s), comma-separated, e.g.:
+#   ALLOWED_ORIGINS=https://myapp.com,https://www.myapp.com
+_allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '*')
+allowed_origins = (
+    '*' if _allowed_origins_env.strip() == '*'
+    else [o.strip() for o in _allowed_origins_env.split(',') if o.strip()]
+)
 CORS(app, 
      resources={r"/api/*": {
-         "origins": "*",
+         "origins": allowed_origins,
          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          "allow_headers": ["Content-Type", "Authorization"],
          "expose_headers": ["Content-Type", "Authorization"],
@@ -31,14 +42,35 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pro
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # JWT configuration
-# Use consistent secret key - generate once and store in .env
-jwt_secret = os.getenv('JWT_SECRET_KEY', 'dyslexic-kid-helper-secret-key-2024')
+# IMPORTANT: Always set JWT_SECRET_KEY in your .env / environment for production.
+# If it's missing, we generate a random one for this process instead of falling
+# back to a hardcoded value (a shared hardcoded secret would let anyone forge
+# valid tokens against any deployment of this codebase). Note that a generated
+# key means existing tokens become invalid if the server restarts, so set the
+# env var explicitly once you're running this for real.
+jwt_secret = os.getenv('JWT_SECRET_KEY')
+if not jwt_secret:
+    jwt_secret = secrets.token_hex(32)
+    print("[WARN] JWT_SECRET_KEY not set in environment - generated a temporary "
+          "random secret for this run. Set JWT_SECRET_KEY in your .env for a "
+          "stable, production-ready deployment.")
 app.config['JWT_SECRET_KEY'] = jwt_secret
-print(f"[OK] JWT Secret Key Set: {jwt_secret[:20]}...")
+print(f"[OK] JWT Secret Key configured ({len(jwt_secret)} chars)")
 
 # Initialize database and JWT
 db.init_app(app)
 jwt = JWTManager(app)
+
+# Rate limiting - protects password-guessing endpoints from brute force.
+# Uses in-memory storage: fine for a single backend instance (this project's
+# deployment target); if you ever run multiple backend replicas behind a
+# load balancer, point storage_uri at shared Redis instead.
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],  # no global limit - only the routes below are limited
+    storage_uri="memory://"
+)
 
 # JWT error handlers with detailed logging
 @jwt.invalid_token_loader
@@ -66,42 +98,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 with app.app_context():
     db.create_all()
 
-# ======================== DEBUG ENDPOINTS ========================
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """Lightweight health-check endpoint for deployment platforms / load balancers."""
+    return jsonify({'status': 'ok'}), 200
 
-@app.route('/api/debug/jwt', methods=['GET'])
-def debug_jwt():
-    """Debug endpoint to check JWT configuration"""
-    return jsonify({
-        'jwt_secret_key': app.config['JWT_SECRET_KEY'][:20] + '...',
-        'secret_full_length': len(app.config['JWT_SECRET_KEY']),
-        'flask_env': os.getenv('FLASK_ENV', 'not set'),
-        'debug_mode': app.debug
-    }), 200
-
-@app.route('/api/debug/token', methods=['POST'])
-def debug_token():
-    """Debug endpoint to validate a token"""
-    from flask_jwt_extended import verify_jwt_in_request
-    try:
-        verify_jwt_in_request()
-        current_user = get_jwt_identity()
-        return jsonify({'valid': True, 'user_id': current_user}), 200
-    except Exception as e:
-        return jsonify({'valid': False, 'error': str(e)}), 401
-
-# Middleware to log all requests
+# Middleware to log all requests (method + path only - never log auth headers/tokens)
 @app.before_request
 def log_request():
-    auth_header = request.headers.get('Authorization', 'No Authorization header')
-    print(f"\n{'='*60}")
     print(f"[REQUEST] {request.method} {request.path}")
-    print(f"[AUTH] Header: {auth_header[:50] if auth_header != 'No Authorization header' else auth_header}...")
-    print(f"{'='*60}\n")
 
 @app.after_request
 def log_response(response):
     if response.status_code >= 400:
-        print(f"[ERROR] RESPONSE: {response.status_code}")
+        print(f"[ERROR] RESPONSE: {request.method} {request.path} -> {response.status_code}")
     return response
 
 @app.route('/api/profiles', methods=['GET'])
@@ -116,6 +126,7 @@ def get_profiles():
 
 
 @app.route('/api/profiles/create', methods=['POST'])
+@limiter.limit("10 per minute")
 def create_profile():
     """Create a new profile (max 3 profiles)"""
     data = request.json
@@ -163,6 +174,7 @@ def create_profile():
 
 
 @app.route('/api/profiles/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login_profile():
     """Login to an existing profile"""
     data = request.json
@@ -188,8 +200,14 @@ def login_profile():
 
 
 @app.route('/api/profiles/<int:profile_id>', methods=['DELETE'])
+@jwt_required()
 def delete_profile(profile_id):
-    """Delete a profile"""
+    """Delete a profile. Requires a valid JWT for that exact profile
+    (the frontend obtains this by re-verifying the password first)."""
+    current_user = get_jwt_identity()
+    if current_user != str(profile_id):
+        return jsonify({'error': 'You can only delete your own profile'}), 403
+
     profile = Profile.query.get(profile_id)
     
     if not profile:
@@ -301,6 +319,7 @@ def upload_file():
 
 
 @app.route('/api/define', methods=['POST'])
+@jwt_required()
 def define_word():
     """Get definition for a word"""
     data = request.json
@@ -312,6 +331,7 @@ def define_word():
 
 
 @app.route('/api/simplify', methods=['POST'])
+@jwt_required()
 def simplify_text():
     """Simplify text for easier reading"""
     data = request.json
@@ -323,6 +343,7 @@ def simplify_text():
 
 
 @app.route('/api/quiz', methods=['POST'])
+@jwt_required()
 def create_quiz():
     """Generate quiz from text"""
     data = request.json
@@ -350,4 +371,8 @@ def create_quiz():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    # Debug mode is OFF by default - it must be explicitly opted into for local
+    # development only (FLASK_DEBUG=true in your .env). Never enable it in
+    # production: Flask's debugger can allow remote code execution if exposed.
+    debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode, use_reloader=False)

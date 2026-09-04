@@ -83,9 +83,14 @@ function ProfileSelector({ onProfileSelected, onCreateNewProfile }) {
       });
 
       if (verifyResponse.data.access_token) {
-        // Password is correct, proceed with deletion
+        // Password is correct, proceed with deletion.
+        // The delete endpoint now requires auth for that exact profile, so we
+        // pass the token we just got from verifying the password (this request
+        // happens before global login, so axios' default header isn't set yet).
         try {
-          await axios.delete(`${API_URL}/api/profiles/${selectedProfile.id}`);
+          await axios.delete(`${API_URL}/api/profiles/${selectedProfile.id}`, {
+            headers: { Authorization: `Bearer ${verifyResponse.data.access_token}` }
+          });
           setShowDeleteConfirm(false);
           setDeletePassword('');
           setSelectedProfile(null);

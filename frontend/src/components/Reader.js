@@ -1,18 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGeneratingQuiz }) {
-  const [displayedText, setDisplayedText] = useState(text);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
   const [tooltip, setTooltip] = useState({ visible: false, word: '', content: '' });
   
   const voicesRef = useRef([]);
+  const utteranceRef = useRef(null);
+
+  // Split text into words for span-based rendering
+  const words = useMemo(() => {
+    if (!text) return [];
+    // Split on whitespace, preserving the structure
+    return text.split(/(\s+)/).filter(segment => segment.length > 0);
+  }, [text]);
+
+  // Build a mapping from charIndex -> word index (for onboundary)
+  const charToWordIndex = useMemo(() => {
+    const mapping = {};
+    let charPos = 0;
+    words.forEach((segment, idx) => {
+      for (let i = 0; i < segment.length; i++) {
+        mapping[charPos + i] = idx;
+      }
+      charPos += segment.length;
+    });
+    return mapping;
+  }, [words]);
 
   useEffect(() => {
-    setDisplayedText(text);
     setIsSpeaking(false);
+    setActiveWordIndex(-1);
     window.speechSynthesis.cancel();
 
     const updateVoices = () => {
@@ -27,7 +48,7 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGenera
     };
   }, [text]);
 
-  // --- FIX 1: GET DEFINITION LOGIC ---
+  // --- GET DEFINITION LOGIC ---
   const handleSelection = async () => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim().replace(/[^a-zA-Z\u0900-\u097F]/g, "");
@@ -46,7 +67,7 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGenera
     }
   };
 
-  // --- FIX 2: SIMPLIFY SELECTION LOGIC ---
+  // --- SIMPLIFY SELECTION LOGIC ---
   const handleSimplifyInternal = async () => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -60,12 +81,12 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGenera
     }
   };
 
-  const handleSpeak = () => {
+  const handleSpeak = useCallback(() => {
     window.speechSynthesis.cancel();
 
     if (isSpeaking) {
       setIsSpeaking(false);
-      setDisplayedText(text);
+      setActiveWordIndex(-1);
       return;
     }
 
@@ -98,39 +119,36 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGenera
         if (onReadAloudStarted) onReadAloudStarted();
       };
 
+      // Word highlighting using onboundary — works for both English and Hindi
       utterance.onboundary = (event) => {
-        if (event.name === 'word' && !isHindi) { 
-          const wordStart = event.charIndex;
-          let wordEnd = text.indexOf(' ', wordStart);
-          if (wordEnd === -1) wordEnd = text.length;
-
-          setDisplayedText(
-            <>
-              {text.substring(0, wordStart)}
-              <span className="highlight">{text.substring(wordStart, wordEnd)}</span>
-              {text.substring(wordEnd)}
-            </>
-          );
+        if (event.name === 'word') {
+          const charIdx = event.charIndex;
+          // Find which word index this character belongs to
+          const wordIdx = charToWordIndex[charIdx];
+          if (wordIdx !== undefined) {
+            setActiveWordIndex(wordIdx);
+          }
         }
       };
 
       utterance.onend = () => {
         setIsSpeaking(false);
-        setDisplayedText(text);
+        setActiveWordIndex(-1);
       };
 
       utterance.onerror = (e) => {
         console.error("Speech Error:", e);
         setIsSpeaking(false);
-        setDisplayedText(text);
+        setActiveWordIndex(-1);
         if (e.error === 'not-allowed') {
           alert("Browser blocked audio. Please click anywhere on the page first, then try again!");
         }
       };
 
+      utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     }, 200);
-  };
+  }, [isSpeaking, text, onReadAloudStarted, charToWordIndex]);
 
   return (
     <div 
@@ -160,10 +178,26 @@ function Reader({ text, onGenerateQuiz, onSimplify, onReadAloudStarted, isGenera
         </div>
         <div 
           className="text-content" 
-          onMouseUp={handleSelection} // Trigger definition on highlight
+          onMouseUp={handleSelection}
           style={{ textAlign: 'left', lineHeight: '2.5', whiteSpace: 'pre-wrap', fontSize: '1.4rem' }}
         >
-            {displayedText}
+            {words.map((segment, index) => {
+              // Whitespace segments — render as-is
+              if (/^\s+$/.test(segment)) {
+                return <span key={index}>{segment}</span>;
+              }
+              // Word segments — highlight if active
+              const isActive = isSpeaking && index === activeWordIndex;
+              return (
+                <span
+                  key={index}
+                  className={`word-span ${isActive ? 'word-highlight' : ''}`}
+                  data-word-index={index}
+                >
+                  {segment}
+                </span>
+              );
+            })}
         </div>
     </div>
   );

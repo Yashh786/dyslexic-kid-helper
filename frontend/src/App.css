@@ -352,3 +352,81 @@ body {
   text-align: center;
   pointer-events: auto;    /* Makes the card itself interactive */
 }
+
+/* Word Highlighting during Read Aloud */
+.word-span {
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 3px;
+  padding: 1px 0;
+}
+
+.word-highlight {
+  background-color: #fef9a7 !important;
+  color: #333 !important;
+  border-radius: 4px;
+  padding: 2px 2px;
+  box-shadow: 0 0 0 2px rgba(254, 249, 167, 0.6);
+  animation: wordPulse 0.3s ease-out;
+}
+
+@keyframes wordPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Quiz Loading Overlay */
+.quiz-loading-overlay {
+  text-align: center;
+  padding: 40px 20px;
+  margin-top: 25px;
+  background: linear-gradient(135deg, #f0f8ff 0%, #fdf6e3 50%, #f0fff4 100%);
+  border-radius: 20px;
+  border: 2px dashed #a7d8de;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.quiz-loading-card {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.quiz-loading-icon {
+  font-size: 3rem;
+  animation: bounce 1.5s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Quiz Review Card */
+.quiz-review-card {
+  margin-top: 25px;
+  padding: 30px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 50%, #f0f8ff 100%);
+  border: 2px solid #38b2ac;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.quiz-stat-box {
+  padding: 15px;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}

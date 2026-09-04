@@ -330,6 +330,11 @@ def create_quiz():
     if not text:
         return jsonify({'error': 'Text not provided'}), 400
     
+    # Check if text is in Hindi
+    from ai_services import is_hindi_text
+    if is_hindi_text(text):
+        return jsonify({'error': 'Quiz for Hindi text is not available for now. Please upload text in English.'}), 400
+    
     quiz_data = generate_quiz(text)
     
     # If there's an error, return it

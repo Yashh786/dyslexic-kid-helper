@@ -2,9 +2,28 @@ import requests
 import os
 import json
 import random
+import re
 
 OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
 MODEL_NAME = "mistral"
+
+def is_hindi_text(text):
+    """
+    Detect if the text contains Hindi language.
+    Hindi characters are in Unicode range: U+0900 to U+097F (Devanagari script)
+    """
+    if not text:
+        return False
+    
+    hindi_pattern = r'[\u0900-\u097F]'
+    hindi_matches = re.findall(hindi_pattern, text)
+    
+    # If more than 5% of characters are Hindi, consider it Hindi text
+    if len(hindi_matches) > len(text) * 0.05:
+        print(f"[INFO] Detected Hindi text - Found {len(hindi_matches)} Hindi characters out of {len(text)} total")
+        return True
+    
+    return False
 
 def randomize_quiz_options(quiz_questions):
     """
@@ -42,7 +61,7 @@ def call_ollama(prompt, is_json=False):
     if is_json:
         payload["format"] = "json"
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=60)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=120)
         response.raise_for_status()
         response_data = response.json()
         return response_data.get('response', '')
@@ -121,6 +140,7 @@ def generate_quiz(text):
     """
     Generate multiple-choice quiz questions based on the provided text.
     Uses as much of the text as possible while respecting model limits.
+    Dynamically adjusts question count based on text length.
     Returns a list of quiz questions with options and correct answers.
     """
     
@@ -130,30 +150,48 @@ def generate_quiz(text):
     if not text_to_use:
         return {"error": "No text provided for quiz generation"}
     
-    # Simplified, more direct prompt for better JSON output with dyslexia-friendly guidelines
-    prompt = f"""You are creating a reading quiz for a 10-year-old child with dyslexia.
+    # Dynamic question count based on text length
+    word_count = len(text_to_use.split())
+    if word_count > 200:
+        num_questions = 5
+    elif word_count > 100:
+        num_questions = 4
+    elif word_count > 50:
+        num_questions = 3
+    else:
+        num_questions = 2
 
-IMPORTANT RULES:
-- Use SHORT and SIMPLE words (avoid complex vocabulary)
-- Keep questions under 8 words
-- Ask about FACTS from the text only
-- Make 4 clearly different answer options
-- Randomize position of correct answer (not always in same place)
-- Do NOT include tricky or misleading content
+    print(f"[INFO] Text has {word_count} words, generating {num_questions} questions")
+    
+    # Improved prompt for better, text-faithful quiz generation
+    prompt = f"""You are creating a reading comprehension quiz for a 10-year-old child with dyslexia.
 
-Generate 2 multiple-choice questions. Return ONLY a JSON array, no other text.
+CRITICAL RULES:
+- Create EXACTLY {num_questions} questions
+- Questions MUST be about FACTS directly stated in the text below
+- Use the EXACT SAME WORDS from the text in the questions — do NOT rephrase or change vocabulary
+- Keep questions SHORT (under 10 words)
+- Each question must have EXACTLY 4 options
+- Only ONE option should be correct
+- Wrong options should be clearly different from the correct answer (not tricky)
+- Use SIMPLE language a child can read
+- Do NOT add information that is not in the text
 
+Return ONLY a valid JSON array. No other text before or after.
+
+Example format:
 [
     {{
-        "question": "What color was the star?",
-        "options": ["Blue", "Red", "Green", "Yellow"],
-        "answer": "Blue"
+        "question": "What color was the ball?",
+        "options": ["Red", "Blue", "Green", "Yellow"],
+        "answer": "Red"
     }}
 ]
 
-TEXT: {text_to_use}
+TEXT TO MAKE QUIZ FROM:
+{text_to_use}
 
-Return ONLY valid JSON array:"""
+Return ONLY the JSON array with {num_questions} questions:"""
 
     try:
         print("[INFO] Generating quiz from text...")

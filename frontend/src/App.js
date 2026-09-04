@@ -20,6 +20,7 @@ function App() {
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [hasListened, setHasListened] = useState(false);
   const [simplifiedText, setSimplifiedText] = useState('');
+  const [hindiQuizError, setHindiQuizError] = useState(false);
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -57,6 +58,7 @@ function App() {
     setExtractedText('');
     setQuizData(null);
     setSimplifiedText('');
+    setHindiQuizError(false);
     setHasListened(false);
     setAuthMode('selector');
     localStorage.removeItem('currentProfile');
@@ -68,6 +70,7 @@ function App() {
     setExtractedText(text);
     setQuizData(null);
     setSimplifiedText('');
+    setHindiQuizError(false);
     setHasListened(false);
   };
 
@@ -81,8 +84,28 @@ function App() {
   };
 
   const handleGenerateQuiz = async (text) => {
+    // Check for Hindi text before sending request
+    const containsHindi = /[\u0900-\u097F]/.test(text);
+    if (containsHindi) {
+      setHindiQuizError(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setLoadingQuiz(true);
     setQuizData(null);
+    setHindiQuizError(false); // Clear any previous error
+    
+    // Scroll down to the loading indicator
+    setTimeout(() => {
+      const loadingEl = document.getElementById('quiz-loading-section');
+      if (loadingEl) {
+        loadingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.scrollBy({ top: 400, behavior: 'smooth' });
+      }
+    }, 100);
+    
     try {
       console.log("[INFO] Starting quiz generation with text length:", text.length);
       const response = await axios.post(`${API_URL}/api/quiz`, { text });
@@ -170,6 +193,24 @@ function App() {
               </div>
             )}
 
+            {/* --- HINDI QUIZ ERROR BOX --- */}
+            {hindiQuizError && (
+              <div className="simplified-container" style={{ border: '2px solid #ffcc00', background: '#fff9e6', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="simplified-header" style={{ color: '#d4a017' }}>⚠️ Oops!</span>
+                  <button
+                    onClick={() => setHindiQuizError(false)}
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  >
+                    ✖
+                  </button>
+                </div>
+                <p style={{ fontSize: '1.2rem', lineHeight: '1.8' }}>
+                  Quiz generation for Hindi text is not available right now. We are working on adding it soon! ✨
+                </p>
+              </div>
+            )}
+
             <Reader
               text={extractedText}
               onGenerateQuiz={handleGenerateQuiz}
@@ -185,11 +226,18 @@ function App() {
             />
 
             {loadingQuiz && (
-              <div style={{ textAlign: 'center', padding: '30px', marginTop: '20px' }}>
-                <div className="loader"></div>
-                <p style={{ marginTop: '15px', fontSize: '1.2rem', color: '#666' }}>
-                  🤔 Creating questions for you... This may take a moment!
-                </p>
+              <div id="quiz-loading-section" className="quiz-loading-overlay">
+                <div className="quiz-loading-card">
+                  <div className="quiz-loading-icon">📚</div>
+                  <div className="loader"></div>
+                  <h3 style={{ color: '#4a5568', margin: '15px 0 8px 0' }}>Creating Your Quiz...</h3>
+                  <p style={{ color: '#718096', fontSize: '1.1rem', margin: 0 }}>
+                    🤔 Reading through the text and making fun questions just for you!
+                  </p>
+                  <p style={{ color: '#a0aec0', fontSize: '0.9rem', marginTop: '10px' }}>
+                    This may take a moment — hang tight! ✨
+                  </p>
+                </div>
               </div>
             )}
             {quizData && <Quiz quizData={quizData} />}

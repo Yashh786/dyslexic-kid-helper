@@ -3,9 +3,39 @@ import os
 import json
 import random
 import re
+from groq import Groq
 
-OLLAMA_URL = "http://host.docker.internal:11434/api/generate"
-MODEL_NAME = "mistral"
+# Groq (https://console.groq.com) - free tier, no local model required.
+# Reads GROQ_API_KEY and GROQ_MODEL from the environment/.env - never hardcode
+# a key here. Note: llama-3.3-70b-versatile was deprecated by Groq (Aug 2026);
+# openai/gpt-oss-120b is their recommended general-purpose replacement.
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
+#
+# IMPORTANT: both the key AND the model name are read LAZILY (inside
+# _get_groq_client / call_ai, below) rather than at import time. app.py
+# imports this module before it calls load_dotenv(), so reading os.getenv()
+# at module load time would always see an empty environment even when
+# .env is set up correctly - this bit us once already for GROQ_API_KEY,
+# so GROQ_MODEL gets the same treatment to avoid the identical trap.
+_groq_client = None
+_groq_warned = False
+
+def _get_groq_client():
+    """Lazily create (and cache) the Groq client on first real use, after
+    the app has finished starting up and .env has definitely been loaded."""
+    global _groq_client, _groq_warned
+    if _groq_client is not None:
+        return _groq_client
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        if not _groq_warned:
+            print("[WARN] GROQ_API_KEY not set - AI features (definitions, simplify, quiz) "
+                  "will fall back to offline/basic behavior instead of using an LLM. "
+                  "Get a free key at https://console.groq.com/keys and add it to your .env file.")
+            _groq_warned = True
+        return None
+    _groq_client = Groq(api_key=api_key)
+    return _groq_client
 
 def is_hindi_text(text):
     """
@@ -55,30 +85,37 @@ def randomize_quiz_options(quiz_questions):
     
     return randomized
 
-def call_ollama(prompt, is_json=False):
-    # ... (This function remains unchanged)
-    payload = {"model": MODEL_NAME, "prompt": prompt, "stream": False}
-    if is_json:
-        payload["format"] = "json"
+def call_ai(prompt, is_json=False):
+    """Call the Groq API (cloud LLM) instead of a local Ollama instance.
+    Keeps the same return contract as before: a plain string response,
+    or a JSON string with an "error" key on failure, so every caller in
+    this file works unchanged."""
+    client = _get_groq_client()
+    if client is None:
+        return json.dumps({"error": "AI features are unavailable - GROQ_API_KEY is not configured."})
     try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=120)
-        response.raise_for_status()
-        response_data = response.json()
-        return response_data.get('response', '')
-    except requests.exceptions.RequestException as e:
-        print(f"Ollama API request failed: {e}")
-        return json.dumps({"error": "Could not connect to the local AI model. Is Ollama running?"})
+        completion = client.chat.completions.create(
+            model=os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL),
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3 if is_json else 0.5,
+            max_tokens=1024,
+            timeout=30
+        )
+        return completion.choices[0].message.content or ""
+    except Exception as e:
+        print(f"Groq API request failed: {e}")
+        return json.dumps({"error": f"Could not reach the AI service: {e}"})
 
 def get_word_definition(word):
     # ... (This function remains unchanged)
     prompt = f"Provide a very simple, one-sentence or much shorter definition for a 10-year-old child for the word: '{word}'."
-    response_text = call_ollama(prompt)
+    response_text = call_ai(prompt)
     return response_text.strip()
 
 def simplify_paragraph(text):
     # ... (This function remains unchanged)
     prompt = f"Rewrite the following paragraph in very simple terms and as short as possible for a 10-year-old child with dyslexia. Keep the core meaning the same:\n\n'{text}'"
-    response_text = call_ollama(prompt)
+    response_text = call_ai(prompt)
     return response_text.strip()
 
 def generate_default_quiz(text):
@@ -195,9 +232,9 @@ Return ONLY the JSON array with {num_questions} questions:"""
 
     try:
         print("[INFO] Generating quiz from text...")
-        json_response_str = call_ollama(prompt, is_json=True)
+        json_response_str = call_ai(prompt, is_json=True)
         
-        print(f"[DEBUG] Raw Ollama response length: {len(json_response_str)}")
+        print(f"[DEBUG] Raw Groq response length: {len(json_response_str)}")
         
         # Try to extract JSON from response (sometimes models wrap it in extra text)
         json_start = json_response_str.find('[')

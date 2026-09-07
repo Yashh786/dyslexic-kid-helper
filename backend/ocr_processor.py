@@ -3,6 +3,31 @@ from PIL import Image, ImageFilter, ImageEnhance
 from pdf2image import convert_from_path
 import os
 import re
+import shutil
+
+
+def _configure_tesseract():
+    """Configure the Tesseract executable for local and container runs."""
+    configured_path = os.getenv('TESSERACT_CMD')
+    candidates = [configured_path] if configured_path else []
+    candidates.extend([
+        shutil.which('tesseract'),
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+        '/usr/bin/tesseract',
+    ])
+
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            pytesseract.pytesseract.tesseract_cmd = candidate
+            print(f"[OK] Tesseract executable: {candidate}")
+            return candidate
+
+    print('[WARN] Tesseract executable was not found. Set TESSERACT_CMD to its full path.')
+    return None
+
+
+_configure_tesseract()
 
 
 def preprocess_image(img):

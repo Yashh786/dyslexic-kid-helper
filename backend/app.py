@@ -4,6 +4,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
+from PIL import Image, UnidentifiedImageError
 import os
 import secrets
 from datetime import timedelta
@@ -236,6 +237,7 @@ def delete_profile(profile_id):
 
 @app.route('/api/upload', methods=['POST'])
 @jwt_required()
+@limiter.limit("20 per hour")
 def upload_file():
     """Upload and process file for text extraction"""
     try:
@@ -274,8 +276,7 @@ def upload_file():
         # Save file to uploads folder
         try:
             filename = secure_filename(file.filename)
-            import time
-            unique_filename = f"{int(time.time())}_{filename}"
+            unique_filename = f"{secrets.token_hex(16)}_{filename}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
             
             # Create uploads directory if it doesn't exist
@@ -285,6 +286,22 @@ def upload_file():
             print(f"File saved to: {filepath}")
             print(f"File exists: {os.path.exists(filepath)}")
             print(f"File size: {os.path.getsize(filepath)}")
+
+            # Verify the file contents, not just the filename extension.
+            if file_ext == 'pdf':
+                with open(filepath, 'rb') as uploaded_file:
+                    valid_pdf = uploaded_file.read(5) == b'%PDF-'
+                if not valid_pdf:
+                    os.remove(filepath)
+                    return jsonify({'error': 'The uploaded file is not a valid PDF.'}), 400
+            else:
+                try:
+                    with Image.open(filepath) as uploaded_image:
+                        uploaded_image.verify()
+                except (UnidentifiedImageError, OSError):
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                    return jsonify({'error': 'The uploaded file is not a valid image.'}), 400
             
         except Exception as save_err:
             print(f"File save error: {save_err}")
@@ -332,6 +349,7 @@ def upload_file():
 
 @app.route('/api/define', methods=['POST'])
 @jwt_required()
+@limiter.limit("100 per hour")
 def define_word():
     """Get definition for a word"""
     data = request.json
@@ -344,6 +362,7 @@ def define_word():
 
 @app.route('/api/simplify', methods=['POST'])
 @jwt_required()
+@limiter.limit("60 per hour")
 def simplify_text():
     """Simplify text for easier reading"""
     data = request.json
@@ -356,6 +375,7 @@ def simplify_text():
 
 @app.route('/api/quiz', methods=['POST'])
 @jwt_required()
+@limiter.limit("30 per hour")
 def create_quiz():
     """Generate quiz from text"""
     data = request.json

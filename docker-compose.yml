@@ -4,6 +4,7 @@ services:
     ports:
       - "5000:5000"
     environment:
+      - APP_ENV=${APP_ENV:-development}
       # Values come from a ".env" file in this same folder (docker-compose loads
       # it automatically) or your shell environment. Falls back to safe local
       # defaults if unset, matching previous behavior.

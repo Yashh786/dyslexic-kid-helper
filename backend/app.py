@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 import os
 import secrets
+from datetime import timedelta
 from dotenv import load_dotenv
 
 from db_models import db, Profile
@@ -15,6 +16,9 @@ from ai_services import get_word_definition, simplify_paragraph, generate_quiz
 # Load environment variables from .env file
 load_dotenv()
 
+APP_ENV = os.getenv('APP_ENV', 'development').lower()
+IS_PRODUCTION = APP_ENV == 'production'
+
 app = Flask(__name__)
 
 # Enable CORS with proper headers for JWT.
@@ -22,6 +26,8 @@ app = Flask(__name__)
 # set it to your actual frontend URL(s), comma-separated, e.g.:
 #   ALLOWED_ORIGINS=https://myapp.com,https://www.myapp.com
 _allowed_origins_env = os.getenv('ALLOWED_ORIGINS', '*')
+if IS_PRODUCTION and _allowed_origins_env.strip() in ('', '*'):
+    raise RuntimeError('ALLOWED_ORIGINS must be set to the frontend HTTPS origin in production')
 allowed_origins = (
     '*' if _allowed_origins_env.strip() == '*'
     else [o.strip() for o in _allowed_origins_env.split(',') if o.strip()]
@@ -50,12 +56,18 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # env var explicitly once you're running this for real.
 jwt_secret = os.getenv('JWT_SECRET_KEY')
 if not jwt_secret:
+    if IS_PRODUCTION:
+        raise RuntimeError('JWT_SECRET_KEY must be set in production')
     jwt_secret = secrets.token_hex(32)
     print("[WARN] JWT_SECRET_KEY not set in environment - generated a temporary "
           "random secret for this run. Set JWT_SECRET_KEY in your .env for a "
           "stable, production-ready deployment.")
 app.config['JWT_SECRET_KEY'] = jwt_secret
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=8)
 print(f"[OK] JWT Secret Key configured ({len(jwt_secret)} chars)")
+
+if IS_PRODUCTION and not os.getenv('GROQ_API_KEY'):
+    raise RuntimeError('GROQ_API_KEY must be set in production')
 
 # Initialize database and JWT
 db.init_app(app)

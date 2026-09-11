@@ -39,9 +39,8 @@ function Uploader({ onTextExtracted }) {
     setError('');
 
     try {
-      const token = localStorage.getItem('authToken');      console.log('Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'null');
-      console.log('Token length:', token ? token.length : 0);
-            if (!token) {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
         setError('Session expired. Please login again.');
         setLoading(false);
         return;
@@ -56,16 +55,10 @@ function Uploader({ onTextExtracted }) {
         timeout: 60000 // 60 second timeout for large files
       });
 
-      console.log('Upload successful:', response.data);
       onTextExtracted(response.data.text);
       setFile(null);
     } catch (err) {
-      console.error('Upload error details:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message,
-        fullError: err
-      });
+      console.error('Upload failed:', err.response?.status || err.message);
 
       // Better error messages
       if (err.response?.status === 401) {

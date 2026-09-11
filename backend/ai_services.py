@@ -104,7 +104,7 @@ def call_ai(prompt, is_json=False):
         return completion.choices[0].message.content or ""
     except Exception as e:
         print(f"Groq API request failed: {e}")
-        return json.dumps({"error": f"Could not reach the AI service: {e}"})
+        return json.dumps({"error": "The AI service is temporarily unavailable. Please try again."})
 
 def get_word_definition(word):
     # ... (This function remains unchanged)

@@ -46,7 +46,6 @@ function Uploader({ onTextExtracted }) {
         return;
       }
 
-      console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
 
       const response = await axios.post(`${API_URL}/api/upload`, formData, {
         headers: {

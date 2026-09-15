@@ -5,16 +5,36 @@ services:
       - "5000:5000"
     environment:
       - APP_ENV=${APP_ENV:-development}
-      # Values come from a ".env" file in this same folder (docker-compose loads
-      # it automatically) or your shell environment. Falls back to safe local
-      # defaults if unset, matching previous behavior.
+      # ── Auth ─────────────────────────────────────────────────────────────────
+      # Generate a strong secret with: python -c "import secrets; print(secrets.token_hex(32))"
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      # ── Database ──────────────────────────────────────────────────────────────
+      # Default: SQLite (fine for local dev, data is lost on container restart).
+      # Production: point at a managed Postgres instance, e.g.:
+      #   DATABASE_URL=postgresql://user:password@host:5432/dbname
       - DATABASE_URL=${DATABASE_URL:-sqlite:///profiles.db}
+      # ── AI (Groq) ─────────────────────────────────────────────────────────────
+      # Get a free key at https://console.groq.com/keys and add it to your .env
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
+      # ── Flask ─────────────────────────────────────────────────────────────────
       - FLASK_DEBUG=${FLASK_DEBUG:-false}
+      # Production: set to your frontend HTTPS URL, e.g. https://myapp.onrender.com
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      # ── Sentry ────────────────────────────────────────────────────────────────
+      # Optional: get a free DSN at https://sentry.io — leave blank to disable
+      - SENTRY_DSN=${SENTRY_DSN:-}
     volumes:
+      # NOTE: Remove this volume mount in production (it overwrites the Docker image
+      # with local files). It's only here so local dev changes are picked up live.
       - ./backend:/app
     restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
   frontend:
     build:
@@ -24,5 +44,6 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: always

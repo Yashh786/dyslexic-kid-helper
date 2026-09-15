@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -21,8 +21,24 @@ function App() {
   const [hasListened, setHasListened] = useState(false);
   const [simplifiedText, setSimplifiedText] = useState('');
   const [hindiQuizError, setHindiQuizError] = useState(false);
+  const [quizError, setQuizError] = useState(''); // replaces alert() for quiz errors
 
-  // Load profile from localStorage on mount
+  // ── Logout handler (defined early so interceptor can reference it) ──────────
+  const handleLogout = useCallback(() => {
+    setCurrentProfile(null);
+    setExtractedText('');
+    setQuizData(null);
+    setSimplifiedText('');
+    setHindiQuizError(false);
+    setQuizError('');
+    setHasListened(false);
+    setAuthMode('selector');
+    localStorage.removeItem('currentProfile');
+    localStorage.removeItem('authToken');
+    delete axios.defaults.headers.common['Authorization'];
+  }, []);
+
+  // ── Load profile from localStorage on mount + wire up 401 interceptor ───────
   useEffect(() => {
     const savedProfile = localStorage.getItem('currentProfile');
     const savedToken = localStorage.getItem('authToken');
@@ -32,12 +48,26 @@ function App() {
         // Set axios default header
         axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
       } catch (err) {
-        console.error('Error loading saved profile:', err);
         localStorage.removeItem('currentProfile');
         localStorage.removeItem('authToken');
       }
     }
-  }, []);
+
+    // Global 401 interceptor — auto-logout when token expires so the user
+    // sees the login screen instead of silent failures.
+    const interceptorId = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          handleLogout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Clean up interceptor on unmount
+    return () => axios.interceptors.response.eject(interceptorId);
+  }, [handleLogout]);
 
   const handleProfileSelected = ({ token, profile }) => {
     setCurrentProfile(profile);
@@ -53,24 +83,13 @@ function App() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   };
 
-  const handleLogout = () => {
-    setCurrentProfile(null);
-    setExtractedText('');
-    setQuizData(null);
-    setSimplifiedText('');
-    setHindiQuizError(false);
-    setHasListened(false);
-    setAuthMode('selector');
-    localStorage.removeItem('currentProfile');
-    localStorage.removeItem('authToken');
-    delete axios.defaults.headers.common['Authorization'];
-  };
 
   const handleTextExtracted = (text) => {
     setExtractedText(text);
     setQuizData(null);
     setSimplifiedText('');
     setHindiQuizError(false);
+    setQuizError('');
     setHasListened(false);
   };
 
@@ -94,8 +113,9 @@ function App() {
 
     setLoadingQuiz(true);
     setQuizData(null);
-    setHindiQuizError(false); // Clear any previous error
-    
+    setQuizError('');
+    setHindiQuizError(false);
+
     // Scroll down to the loading indicator
     setTimeout(() => {
       const loadingEl = document.getElementById('quiz-loading-section');
@@ -105,14 +125,12 @@ function App() {
         window.scrollBy({ top: 400, behavior: 'smooth' });
       }
     }, 100);
-    
+
     try {
-      console.log("[INFO] Starting quiz generation with text length:", text.length);
       const response = await axios.post(`${API_URL}/api/quiz`, { text });
-      
+
       // Check if response is a valid array of quiz questions
       if (Array.isArray(response.data) && response.data.length > 0) {
-        console.log("[OK] Quiz generated successfully with", response.data.length, "questions");
         setQuizData(response.data);
         // Scroll to quiz after a short delay to ensure rendering
         setTimeout(() => {
@@ -122,23 +140,16 @@ function App() {
           }
         }, 300);
       } else {
-        console.error("[ERROR] Invalid quiz response format");
-        alert("Quiz generation returned an unexpected format. Please try again.");
+        setQuizError('Quiz generation returned an unexpected format. Please try again.');
       }
     } catch (error) {
-      console.error("[ERROR] Quiz generation failed:", error);
-      
-      // Handle network/server errors
       if (error.response) {
         const errorMsg = error.response.data?.error || 'Server error occurred';
-        console.error("[ERROR] Server error:", errorMsg);
-        alert(`Could not generate quiz: ${errorMsg}`);
+        setQuizError(`Could not generate quiz: ${errorMsg}`);
       } else if (error.request) {
-        console.error("[ERROR] No response from server");
-        alert("No response from server. Is the backend running?");
+        setQuizError('No response from server. Please check your connection.');
       } else {
-        console.error("[ERROR] Request setup failed:", error.message);
-        alert("An error occurred while preparing the quiz request.");
+        setQuizError('An error occurred while preparing the quiz request.');
       }
     } finally {
       setLoadingQuiz(false);
@@ -241,6 +252,22 @@ function App() {
               </div>
             )}
             {quizData && <Quiz quizData={quizData} />}
+
+            {/* --- QUIZ ERROR BOX (replaces alert()) --- */}
+            {quizError && (
+              <div className="simplified-container" style={{ border: '2px solid #fc8181', background: '#fff5f5', marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="simplified-header" style={{ color: '#c53030' }}>⚠️ Quiz Error</span>
+                  <button
+                    onClick={() => setQuizError('')}
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  >
+                    ✖
+                  </button>
+                </div>
+                <p style={{ fontSize: '1.1rem', lineHeight: '1.8', color: '#742a2a' }}>{quizError}</p>
+              </div>
+            )}
           </>
         )}
 

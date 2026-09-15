@@ -17,6 +17,26 @@ from ai_services import get_word_definition, simplify_paragraph, generate_quiz
 # Load environment variables from .env file
 load_dotenv()
 
+# ── Sentry error monitoring ───────────────────────────────────────────────────
+# Initialised only when SENTRY_DSN is set; harmless no-op otherwise.
+# Get a free DSN at https://sentry.io (5 000 errors/month free tier).
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+_sentry_dsn = os.getenv('SENTRY_DSN', '').strip()
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[FlaskIntegration()],
+        # Capture 10% of transactions for performance monitoring (adjust as needed)
+        traces_sample_rate=0.1,
+        # Don't send PII (usernames, IPs) to Sentry
+        send_default_pii=False,
+    )
+    print("[OK] Sentry error monitoring enabled")
+else:
+    print("[INFO] SENTRY_DSN not set — Sentry disabled (set it in .env to enable)")
+
 APP_ENV = os.getenv('APP_ENV', 'development').lower()
 IS_PRODUCTION = APP_ENV == 'production'
 
@@ -153,8 +173,8 @@ def create_profile():
     if len(username) < 3:
         return jsonify({'error': 'Username must be at least 3 characters'}), 400
     
-    if len(password) < 4:
-        return jsonify({'error': 'Password must be at least 4 characters'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
     
     # Check if profile already exists
     if Profile.query.filter_by(username=username).first():

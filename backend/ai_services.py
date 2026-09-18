@@ -1,4 +1,3 @@
-import requests
 import os
 import json
 import random
@@ -97,7 +96,7 @@ def call_ai(prompt, is_json=False):
         completion = client.chat.completions.create(
             model=os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL),
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3 if is_json else 0.5,
+            temperature=0.7 if is_json else 0.5,
             max_tokens=1024,
             timeout=30
         )
@@ -107,14 +106,34 @@ def call_ai(prompt, is_json=False):
         return json.dumps({"error": "The AI service is temporarily unavailable. Please try again."})
 
 def get_word_definition(word):
-    # ... (This function remains unchanged)
-    prompt = f"Provide a very simple, one-sentence or much shorter definition for a 10-year-old child for the word: '{word}'."
+    prompt = f"""You are explaining a word to a child aged 8-10 with dyslexia.
+
+Word: "{word}"
+
+Write ONE single sentence that tells what this word means.
+- Use only simple, everyday words a child already knows
+- No examples, no extra sentences, just the meaning
+- Keep it under 15 words
+- Do NOT start with "Meaning:" or any label — just write the sentence directly"""
     response_text = call_ai(prompt)
     return response_text.strip()
 
 def simplify_paragraph(text):
-    # ... (This function remains unchanged)
-    prompt = f"Rewrite the following paragraph in very simple terms and as short as possible for a 10-year-old child with dyslexia. Keep the core meaning the same:\n\n'{text}'"
+    prompt = f"""You are helping a child with dyslexia (age 8-12) understand a passage.
+
+Your job:
+1. Read the passage below
+2. Write a SHORT, SIMPLE summary in 2-3 sentences MAXIMUM
+3. Use only easy, everyday words (no big vocabulary)
+4. Use short sentences (under 10 words each)
+5. Keep the main idea but throw away confusing details
+6. Write like you are telling a friend what happened in the passage
+7. Do NOT copy sentences from the original - rewrite completely in simple words
+
+Passage:
+{text}
+
+Write the simple summary now (2-3 short sentences only):"""
     response_text = call_ai(prompt)
     return response_text.strip()
 
@@ -200,35 +219,50 @@ def generate_quiz(text):
 
     print(f"[INFO] Text has {word_count} words, generating {num_questions} questions")
     
-    # Improved prompt for better, text-faithful quiz generation
-    prompt = f"""You are creating a reading comprehension quiz for a 10-year-old child with dyslexia.
+    import random as _random
+    # Pick varied question starters so every quiz feels different
+    question_starters = [
+        "Who", "What", "Where", "When", "Why", "How",
+        "Which", "What kind of", "What did", "What does"
+    ]
+    _random.shuffle(question_starters)
+    starter_hint = ", ".join(question_starters[:5])
+
+    # Improved prompt for kid-friendly, varied quiz generation
+    prompt = f"""You are a fun, friendly teacher making a reading quiz for a child aged 8-12 with dyslexia.
 
 CRITICAL RULES:
-- Create EXACTLY {num_questions} questions
-- Questions MUST be about FACTS directly stated in the text below
-- Use the EXACT SAME WORDS from the text in the questions — do NOT rephrase or change vocabulary
-- Keep questions SHORT (under 10 words)
-- Each question must have EXACTLY 4 options
-- Only ONE option should be correct
-- Wrong options should be clearly different from the correct answer (not tricky)
-- Use SIMPLE language a child can read
-- Do NOT add information that is not in the text
+- Create EXACTLY {num_questions} questions — all DIFFERENT from each other
+- Each question must start with a DIFFERENT question word. Try using words like: {starter_hint}
+- Questions MUST be based on FACTS directly in the text — no guessing
+- Keep questions SHORT and SIMPLE (under 12 words, easy vocabulary)
+- Each question must have EXACTLY 4 answer choices
+- Only ONE choice is correct — make wrong choices clearly wrong (not tricky or confusing)
+- Wrong choices must be plausible but obviously incorrect to a child who read the text
+- Use FUN, friendly language — like a teacher talking to a child
+- NEVER repeat the same question or same topic twice
+- Do NOT ask questions that are too similar to each other
 
-Return ONLY a valid JSON array. No other text before or after.
+Return ONLY a valid JSON array. No extra text, no explanation.
 
 Example format:
 [
     {{
-        "question": "What color was the ball?",
-        "options": ["Red", "Blue", "Green", "Yellow"],
-        "answer": "Red"
+        "question": "What did the dog find in the park?",
+        "options": ["A ball", "A cat", "A bone", "A shoe"],
+        "answer": "A bone"
+    }},
+    {{
+        "question": "Where did the story happen?",
+        "options": ["At school", "In the park", "At home", "In a shop"],
+        "answer": "In the park"
     }}
 ]
 
 TEXT TO MAKE QUIZ FROM:
 {text_to_use}
 
-Return ONLY the JSON array with {num_questions} questions:"""
+Now create {num_questions} DIFFERENT questions as a JSON array:"""
 
     try:
         print("[INFO] Generating quiz from text...")
